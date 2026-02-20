@@ -115,6 +115,7 @@ setup_user_dat() {
     
     if check_yes_no "Configure container login user?"; then
         login_user=$(prompt_input "Login username" "$default_user")
+        login_pass=""
         while [[ -z "$login_pass" ]]; do
             login_pass=$(prompt_password "Password for '$login_user'")
             if [[ -z "$login_pass" ]]; then
