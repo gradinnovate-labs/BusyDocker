@@ -67,6 +67,15 @@ create_user() {
     log "Added '$username' to sudoers with NOPASSWD"
 }
 
+unminimize_system() {
+    if [[ -f /etc/dpkg/dpkg.cfg.d/excludes ]]; then
+        log "Running unminimize to restore man pages..."
+        yes | unminimize 2>&1 || log "unminimize completed (or already done)"
+    else
+        log "System not minimized, skipping unminimize"
+    fi
+}
+
 setup_sshd() {
     log "Configuring SSH daemon"
     sed -i "s/#Port.*/Port 22/" /etc/ssh/sshd_config
@@ -97,6 +106,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     create_user "$username" "$password" "$uid" "$gid" || true
 done < "$USERFILE"
 
+unminimize_system
 setup_sshd
 log "Post-build complete"
 exit 0
