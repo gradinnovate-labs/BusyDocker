@@ -10,8 +10,10 @@ err() { echo "[ERROR] $1" >&2; }
 create_user() {
     local username="$1"
     local password="$2"
+    local uid="$3"
+    local gid="$4"
     
-    log "Setting up user: $username"
+    log "Setting up user: $username (uid=${uid:-auto}, gid=${gid:-auto})"
     
     if [[ "$username" == "root" ]]; then
         if ! echo "$username:$password" | chpasswd -c SHA512 2>&1; then
@@ -30,11 +32,16 @@ create_user() {
         return 0
     fi
     
+    local useradd_opts="-m -d /home/$username -s /bin/bash -g root -G sudo"
+    if [[ -n "$uid" ]]; then
+        useradd_opts="$useradd_opts -u $uid"
+    fi
+    
     if id "$username" &>/dev/null; then
         log "User '$username' already exists, updating password"
         usermod -aG sudo "$username" 2>/dev/null || true
     else
-        if ! useradd -rm -d "/home/$username" -s /bin/bash -g root -G sudo "$username" 2>&1; then
+        if ! useradd -r $useradd_opts "$username" 2>&1; then
             err "useradd failed for '$username'"
             return 1
         fi
@@ -47,7 +54,7 @@ create_user() {
     
     local home="/home/$username"
     mkdir -p "$home/.ssh" "$home/.vscode" "$home/.vscode-server"
-    chown "$username" "$home/.ssh" "$home/.vscode" "$home/.vscode-server"
+    chown -R "$username" "$home"
     
     if [[ -f "$SSH_PUB_KEY" ]]; then
         cat "$SSH_PUB_KEY" >> "$home/.ssh/authorized_keys"
@@ -76,14 +83,18 @@ fi
 
 while IFS= read -r line || [[ -n "$line" ]]; do
     [[ -z "$line" || "$line" =~ ^[[:space:]]*$ || "$line" =~ ^# ]] && continue
-    username="${line%%:*}"
-    password="${line#*:}"
-    password="${password%%:*}"
+    
+    username=$(echo "$line" | cut -d: -f1)
+    password=$(echo "$line" | cut -d: -f2)
+    uid=$(echo "$line" | cut -d: -f4)
+    gid=$(echo "$line" | cut -d: -f5)
+    
     if [[ -z "$username" || -z "$password" ]]; then
         log "Warning: Invalid line '$line', skipping"
         continue
     fi
-    create_user "$username" "$password" || true
+    
+    create_user "$username" "$password" "$uid" "$gid" || true
 done < "$USERFILE"
 
 setup_sshd

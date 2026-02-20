@@ -111,7 +111,7 @@ del_ssh_key() {
 
 setup_user_dat() {
     local default_user="${USER:-$(whoami 2>/dev/null || echo 'user')}"
-    local login_user login_pass
+    local login_user login_pass uid gid
     
     if check_yes_no "Configure container login user?"; then
         login_user=$(prompt_input "Login username" "$default_user")
@@ -123,15 +123,19 @@ setup_user_dat() {
             fi
         done
         echo >/dev/tty
+        uid=$(id -u)
+        gid=$(id -g)
     else
         login_user="root"
         login_pass="2026ncue"
+        uid=""
+        gid=""
         log "Using default: root / 2026ncue"
     fi
     
     USER_NAME="$login_user"
-    echo "${login_user}:${login_pass}:${SSH_PORT}" > "$USER_FILE"
-    logv "Generated $USER_FILE for user: $login_user, port: $SSH_PORT"
+    echo "${login_user}:${login_pass}:${SSH_PORT}:${uid}:${gid}" > "$USER_FILE"
+    logv "Generated $USER_FILE for user: $login_user, port: $SSH_PORT, uid: ${uid:-N/A}, gid: ${gid:-N/A}"
 }
 
 cleanup_user_dat() {
