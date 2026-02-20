@@ -1,0 +1,12 @@
+.git
+.gitignore
+*.md
+LICENSE
+.env
+.env.*
+docker-compose.yml
+Dockerfile*
+*.log
+ssh_key_busydocker
+user.dat
+workspace

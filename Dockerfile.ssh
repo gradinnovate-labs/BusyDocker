@@ -1,0 +1,28 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    QT_X11_NO_MITSHM=1
+
+COPY include.pkg /tmp/include.pkg
+COPY include.pip3.pkg /tmp/include.pip3.pkg
+
+RUN apt-get update && \
+    apt-get install -yq \
+        bash python3 python3-pip && \
+    xargs -a /tmp/include.pkg apt-get install -yq && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/include.pkg && \
+    xargs -a /tmp/include.pip3.pkg pip3 install --no-cache-dir && \
+    rm -f /tmp/include.pip3.pkg
+
+COPY post_build.sh /post_build.sh
+COPY user.dat /user.dat
+COPY ssh_key_busydocker.pu[b] /
+
+RUN chmod +x /post_build.sh && \
+    bash /post_build.sh && \
+    rm -f /post_build.sh /user.dat /ssh_key_busydocker.pub
+
+EXPOSE 22
+
+CMD ["/usr/sbin/sshd", "-D"]

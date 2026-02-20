@@ -1,0 +1,18 @@
+services:
+  busydocker:
+    build:
+      context: .
+      dockerfile: Dockerfile.ssh
+    image: busydocker:latest
+    container_name: busydocker_inst
+    ports:
+      - "${SSH_PORT:-22}:22"
+    environment:
+      - DISPLAY=docker.for.mac.host.internal:0
+    volumes:
+      - vscode-server:/home/${CONTAINER_USER:-user}/.vscode-server
+      - ${WORKSPACE_PATH:-./workspace}:/workspace
+    restart: unless-stopped
+
+volumes:
+  vscode-server:
